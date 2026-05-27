@@ -11,26 +11,48 @@ from src.cleaning import normalize_minmax
 
 def normalize_column_inverse(data: np.ndarray) -> np.ndarray:
     """
-    Normaliza columnas que son "inversas" (menor es peor)
-    Ej: zonas verdes (menos es peor)
-    
-    Args:
-        data: Array de datos
-        
-    Returns:
-        np.ndarray: Datos normalizados invertidos [0, 1]
+    Normaliza columnas inversas: menor valor = mayor prioridad.
+    Convierte siempre a número para evitar errores con columnas de texto
+    o dtypes Arrow de pandas.
     """
-    # Para datos que son inversamente proporcionales a la prioridad
-    # (ej: zonas verdes, más es mejor)
+    data = pd.to_numeric(pd.Series(data), errors="coerce").fillna(0).to_numpy(dtype=float)
+
     min_val = np.nanmin(data)
     max_val = np.nanmax(data)
-    
+
     if min_val == max_val:
         return np.ones_like(data, dtype=float)
-    
-    # Normaliza y luego invierte
+
     normalized = (data - min_val) / (max_val - min_val)
-    return 1.0 - normalized  # Invertir para que menor zonas verdes = mayor prioridad
+    return 1.0 - normalized
+
+
+def numeric_series(df: pd.DataFrame, col: str) -> pd.Series:
+    """Devuelve una columna convertida a numérica de forma segura."""
+    return pd.to_numeric(df[col], errors="coerce").fillna(0)
+
+
+def find_numeric_column(df: pd.DataFrame, keywords: list[str], default: str = None) -> str | None:
+    """
+    Busca una columna que contenga alguna palabra clave y que pueda convertirse a número.
+    Evita coger columnas de texto como 'zona'.
+    """
+    candidate_cols = []
+
+    if default and default in df.columns:
+        candidate_cols.append(default)
+
+    for c in df.columns:
+        c_lower = c.lower()
+        if any(k in c_lower for k in keywords):
+            candidate_cols.append(c)
+
+    for c in candidate_cols:
+        converted = pd.to_numeric(df[c], errors="coerce")
+        if converted.notna().sum() > 0:
+            return c
+
+    return None
 
 
 def calculate_urban_priority_index(
@@ -66,7 +88,7 @@ def calculate_urban_priority_index(
     # 1. Componente de quejas (30%)
     if "quejas" in df.columns or "num_quejas" in df.columns:
         col = "quejas" if "quejas" in df.columns else "num_quejas"
-        df["quejas_norm"] = normalize_minmax(df[col].fillna(0).values) * 100
+        df["quejas_norm"] = normalize_minmax(numeric_series(df, col).values) * 100
         components["quejas"] = weights["quejas"]
     else:
         df["quejas_norm"] = 0
@@ -80,7 +102,7 @@ def calculate_urban_priority_index(
         
         if contam_cols:
             # Usa el promedio de columnas de contaminación
-            contam_data = df[contam_cols].mean(axis=1, skipna=True).fillna(0)
+            contam_data = df[contam_cols].apply(pd.to_numeric, errors="coerce").mean(axis=1, skipna=True).fillna(0)
         else:
             contam_data = df.get("contaminacion", pd.Series(0, index=df.index))
         
@@ -97,7 +119,7 @@ def calculate_urban_priority_index(
             if any(x in c.lower() for x in ["ruido", "db", "decibelio"]):
                 col = c
                 break
-        df["ruido_norm"] = normalize_minmax(df[col].fillna(0).values) * 100
+        df["ruido_norm"] = normalize_minmax(numeric_series(df, col).values) * 100
         components["ruido"] = weights["ruido"]
     else:
         df["ruido_norm"] = 0
@@ -106,53 +128,58 @@ def calculate_urban_priority_index(
     # 4. Componente de zonas verdes (15%)
     # INVERTIDO: menos zonas verdes = más prioridad
     if "zonas_verdes" in df.columns or "hectareas_verdes" in df.columns or "zonas_verdes_ha" in df.columns:
-        col = "zonas_verdes"
-        for c in df.columns:
-            if any(x in c.lower() for x in ["zona", "verde", "hectarea"]):
-                col = c
-                break
-        # Invertir: menos zonas verdes = mayor prioridad
-        df["zonas_verdes_norm"] = normalize_column_inverse(df[col].fillna(0).values) * 100
-        components["zonas_verdes"] = weights["zonas_verdes"]
+        # IMPORTANTE: no buscar por "zona", porque cogería la columna de texto "zona".
+        col = find_numeric_column(
+            df,
+            keywords=["zonas_verdes", "verde", "hectarea", "ha", "superficie"],
+            default="zonas_verdes"
+        )
+        if col is None:
+            df["zonas_verdes_norm"] = 0
+            components["zonas_verdes"] = 0
+        else:
+            df["zonas_verdes_norm"] = normalize_column_inverse(df[col].values) * 100
+            components["zonas_verdes"] = weights["zonas_verdes"]
     else:
         df["zonas_verdes_norm"] = 0
         components["zonas_verdes"] = 0
-    
+
     # 5. Componente de servicios públicos (10%)
     # INVERTIDO: menos servicios = más prioridad
     if "servicios_publicos" in df.columns or "servicios" in df.columns:
-        col = "servicios_publicos" if "servicios_publicos" in df.columns else "servicios"
-        # Busca columnas relacionadas con servicios
-        service_cols = [c for c in df.columns if any(x in c.lower() for x in 
-                        ["servicio", "salud", "escuela", "centro", "biblioteca"])]
-        
-        if service_cols:
-            service_data = df[service_cols].sum(axis=1, skipna=True).fillna(0)
+        col = find_numeric_column(
+            df,
+            keywords=["servicio", "salud", "escuela", "biblioteca"],
+            default="servicios_publicos" if "servicios_publicos" in df.columns else "servicios"
+        )
+        if col is None:
+            df["servicios_norm"] = 0
+            components["servicios"] = 0
         else:
-            service_data = df.get(col, pd.Series(0, index=df.index))
-        
-        # Invertir: menos servicios = mayor prioridad
-        df["servicios_norm"] = normalize_column_inverse(service_data.values) * 100
-        components["servicios"] = weights["servicios"]
+            df["servicios_norm"] = normalize_column_inverse(df[col].values) * 100
+            components["servicios"] = weights["servicios"]
     else:
         df["servicios_norm"] = 0
         components["servicios"] = 0
-    
+
     # 6. Componente de actividad comercial (10%)
     # INVERTIDO: menos actividad comercial = más prioridad
     if "actividad_comercial" in df.columns or "num_comercios" in df.columns or "comercio" in df.columns:
-        col = "actividad_comercial"
-        for c in df.columns:
-            if any(x in c.lower() for x in ["comercial", "comercio", "empleo"]):
-                col = c
-                break
-        # Invertir: menos comercio = mayor prioridad
-        df["comercio_norm"] = normalize_column_inverse(df[col].fillna(0).values) * 100
-        components["comercio"] = weights["comercio"]
+        col = find_numeric_column(
+            df,
+            keywords=["actividad_comercial", "comercial", "comercio", "num_comercios", "empleo"],
+            default="actividad_comercial"
+        )
+        if col is None:
+            df["comercio_norm"] = 0
+            components["comercio"] = 0
+        else:
+            df["comercio_norm"] = normalize_column_inverse(df[col].values) * 100
+            components["comercio"] = weights["comercio"]
     else:
         df["comercio_norm"] = 0
         components["comercio"] = 0
-    
+
     # Calcula índice ponderado
     total_weight = sum(components.values())
     if total_weight > 0:

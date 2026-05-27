@@ -2,52 +2,365 @@
 
 **Plataforma inteligente para priorizar actuaciones urbanas mediante datos abiertos y análisis predictivo**
 
+---
+
 ## 🎯 Objetivo
 
-Convertir datos abiertos y datos municipales en una herramienta visual e inteligente que permita a Fuenlabrada:
-- 🗺️ Identificar zonas que requieren atención prioritaria
-- 📊 Analizar múltiples indicadores (social, ambiental, económico)
-- 🤖 Predecir problemas futuros con Machine Learning
-- 💡 Generar recomendaciones automáticas de actuación
+Convertir datos abiertos y datos municipales en una herramienta visual e inteligente que permita al Ayuntamiento de Fuenlabrada:
+
+- 🗺️ **Identificar zonas críticas** que requieren atención prioritaria
+- 📊 **Analizar múltiples indicadores** (social, ambiental, económico)
+- 🤖 **Predecir problemas futuros** con Machine Learning
+- 💡 **Generar recomendaciones** automáticas de actuación
+- 🌍 **Utilizar datos públicos** del portal abierto de Fuenlabrada
+
+---
 
 ## 🚀 Características Principales
 
-### 📍 Mapa Interactivo
-- Visualización geográfica de zonas por nivel de prioridad
-- Diferentes tipos de mapas: puntos, heatmap, por prioridad
+### 1. **📍 Mapa Interactivo de Prioridades**
+- Visualización geográfica de zonas coloreadas por nivel de prioridad
+- Sistema de colores intuitivo:
+  - 🟢 Verde: Prioridad baja (0-40)
+  - 🟡 Amarillo: Prioridad media (40-60)
+  - 🟠 Naranja: Prioridad alta (60-80)
+  - 🔴 Rojo: Prioridad crítica (80-100)
 - Información detallada al hacer clic en cada zona
+- Múltiples tipos de vista: puntos, heatmap, por prioridad
 
-### ⭐ Índice de Prioridad Urbana
-- Puntuación de 0-100 que combina 6 indicadores
-- Clasificación: Baja, Media, Alta, Crítica
-- Desglose de contribución de cada componente
+### 2. **⭐ Índice de Prioridad Urbana**
+- Puntuación única de 0-100 que combina 6 indicadores clave
+- **Fórmula ponderada:**
+  - 30% Quejas/Incidencias ciudadanas
+  - 20% Contaminación ambiental
+  - 15% Contaminación acústica (Ruido)
+  - 15% Déficit de zonas verdes
+  - 10% Falta de servicios públicos
+  - 10% Baja actividad comercial
+- Ranking ordenado por prioridad
+- Explicabilidad total del índice
 
-### 🌳 Análisis Ambiental
-- Evaluación de contaminación, ruido y zonas verdes
-- Identificación de puntos críticos ambientales
+### 3. **🌳 Análisis Ambiental**
+- Evaluación de contaminación del aire, ruido y zonas verdes
+- Relación entre contaminación y espacios verdes
+- Ranking de zonas por déficit ambiental
 - Recomendaciones de intervención verde
 
-### 🤖 Predicción con ML
-- Modelo Random Forest para estimar prioridades futuras
-- Detección de tendencias (mejora/empeora)
+### 4. **🤖 Predicción con Machine Learning**
+- Modelo **Random Forest Regressor** para estimar prioridades futuras
+- Detección de tendencias (mejora/empeora/estable)
 - Análisis de importancia de features
+- Error y métricas de validación del modelo
+- Alerta de riesgo futuro por zona
 
-### 🧠 Recomendaciones Automáticas
+### 5. **🧠 Recomendaciones Automáticas**
 - Generadas según análisis de datos por zona
-- Top acciones municipales recomendadas
-- Priorizadas por eje de impacto (social, ambiental, económico)
+- Top 5 acciones municipales recomendadas
+- Recomendaciones específicas por eje:
+  - 👥 **Social**: Atención ciudadana, servicios
+  - 🌳 **Ambiental**: Reducción contaminación, zonas verdes
+  - 💰 **Económico**: Actividad comercial, emprendimiento
 
-### 📊 Dashboard Completo
+### 6. **📊 Dashboard Ejecutivo**
 - Métricas principales en tiempo real
-- Gráficos interactivos con Plotly
-- Análisis de tres ejes de impacto
+- Distribución de zonas por prioridad (gráfico de pastel)
+- Impacto por eje (social, ambiental, económico)
+- Visualizaciones interactivas con Plotly
 
-### 📦 Trazabilidad de Datos
-- Documentación de fuentes utilizadas
+### 7. **📦 Trazabilidad de Datos**
+- Documentación completa de fuentes utilizadas
 - Reporte de calidad de datos
+- Detalle de datasets cargados
 - Descarga de resultados en CSV
 
-## 📋 Indicadores Utilizados
+---
+
+## 📊 Indicadores Utilizados
+
+| Indicador | Peso | Fuente |
+|-----------|------|--------|
+| Quejas ciudadanas | 30% | Portal de Datos Abiertos |
+| Contaminación (PM10, NO2) | 20% | Calidad del aire - Datos abiertos |
+| Ruido (Decibelios) | 15% | Contaminación acústica - Datos abiertos |
+| Zonas verdes (déficit) | 15% | Espacios verdes - Datos abiertos |
+| Servicios públicos | 10% | Edificios públicos - Datos abiertos |
+| Actividad comercial | 10% | Tipología comercial - Datos abiertos |
+
+---
+
+## 🗂️ Estructura del Proyecto
+
+```
+fuenlabrada-smart-priorities/
+│
+├── app.py                           # Aplicación principal Streamlit
+├── requirements.txt                 # Dependencias Python
+├── README.md                        # Este archivo
+│
+├── src/                             # Módulos de lógica
+│   ├── __init__.py
+│   ├── data_loader.py              # Carga desde API CKAN y archivos
+│   ├── cleaning.py                 # Limpieza y normalización de datos
+│   ├── indicators.py               # Cálculo del índice de prioridad
+│   ├── model.py                    # Modelo predictivo (Random Forest)
+│   ├── maps.py                     # Visualización en mapas
+│   └── recommendations.py          # Motor de recomendaciones
+│
+├── data/                            # Datos (ignorado en repositorio)
+│   ├── raw/                        # Datos descargados de la API
+│   └── processed/                  # Datos procesados
+│
+└── notebooks/                       # Análisis exploratorio
+    └── exploracion.ipynb           # Notebook con EDA
+```
+
+---
+
+## ⚙️ Instalación
+
+### Requisitos Previos
+- Python 3.9+
+- pip o conda
+
+### Pasos de Instalación
+
+#### Windows:
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+#### macOS/Linux:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 Uso
+
+### Ejecutar la Aplicación
+
+#### Windows:
+```bash
+streamlit run app.py
+```
+
+#### macOS/Linux:
+```bash
+streamlit run app.py
+```
+
+La aplicación se abrirá en `http://localhost:8501`
+
+### Carga de Datos
+
+La aplicación soporta dos modos:
+
+1. **Datos de Demostración** (Recomendado para empezar)
+   - Datos sintéticos pero realistas
+   - Modelo pre-entrenado
+   - Análisis completo
+
+2. **Datos Propios**
+   - Cargar CSV o XLSX
+   - Auto-detección de columnas
+   - Integración con datos públicos
+   - Entrenamiento automático del modelo
+
+---
+
+## 📦 Dependencias Principales
+
+```
+streamlit>=1.28.0          # Framework web
+pandas>=2.1.0              # Análisis de datos
+numpy>=1.26.0              # Computación numérica
+plotly>=5.17.0             # Visualizaciones interactivas
+scikit-learn>=1.4.0        # Machine Learning
+folium>=0.14.0             # Mapas Leaflet
+pydeck>=0.8.0              # Mapas Mapbox
+geopandas>=0.14.0          # Datos geoespaciales
+requests>=2.31.0           # Conexión API
+openpyxl>=3.1.0            # Lectura de Excel
+```
+
+---
+
+## 🔄 Metodología
+
+### 1. **Carga de Datos**
+- Origen: Portal de Datos Abiertos de Fuenlabrada (API CKAN)
+- Alternativa: Subida manual de CSV/XLSX desde Streamlit
+- Integración automática de múltiples fuentes
+
+### 2. **Limpieza y Preparación**
+- Normalización de columnas (lowercase, sin espacios)
+- Detección automática de tipos de datos
+- Manejo de valores faltantes (estrategia mediana)
+- Eliminación de duplicados
+
+### 3. **Cálculo del Índice**
+- Normalización Min-Max [0, 1] de cada indicador
+- Aplicación de pesos ponderados
+- Conversión a escala [0, 100]
+- Clasificación en 4 niveles de prioridad
+
+### 4. **Análisis por Ejes**
+- **Eje Social**: Quejas, servicios, atención ciudadana
+- **Eje Ambiental**: Contaminación, ruido, zonas verdes
+- **Eje Económico**: Actividad comercial, dinami smo
+
+### 5. **Predicción ML**
+- Modelo: Random Forest Regressor
+- Variables: Indicadores normalizados
+- Target: Índice de prioridad futuro
+- Validación: Cross-validation 5-fold
+
+### 6. **Recomendaciones**
+- Reglas automáticas basadas en valores de indicadores
+- Priorización según nivel de necesidad
+- Enfoque holístico por zona
+
+---
+
+## 📈 Resultados Esperados
+
+### Para el Ayuntamiento
+- **Visión clara** de dónde actuar primero
+- **Priorización objetiva** basada en datos
+- **Recomendaciones accionables** por zona
+- **Alertas de tendencias** futuras
+
+### Para el Proyecto Hackathon
+- ✅ Uso de datos públicos abiertos
+- ✅ Análisis multidimensional
+- ✅ Predicción con ML
+- ✅ Interfaz web profesional
+- ✅ Documentación completa
+- ✅ Aplicación práctica en contexto real
+
+---
+
+## 📊 Ejemplo de Salida
+
+### Zona: Centro (Índice: 84/100 - CRÍTICA)
+
+**Desglose de Prioridad:**
+- Quejas: 25 pts (84% * 30%)
+- Contaminación: 16 pts (80% * 20%)
+- Ruido: 12 pts (80% * 15%)
+- Zonas verdes: 10 pts (67% * 15%)
+- Servicios: 8 pts (80% * 10%)
+- Comercio: 8 pts (80% * 10%)
+
+**Recomendaciones:**
+1. Reforzar atención ciudadana (muchas quejas)
+2. Controlar focos de contaminación
+3. Aumentar sombra urbana
+4. Mejorar servicios públicos
+5. Impulsar actividad comercial
+
+**Predicción Futuro:**
+- Prioridad estimada: 89/100 (Empeora)
+- Riesgo: Alto
+- Tendencia: -5 puntos (negativa)
+
+---
+
+## 🔬 Limitaciones y Mejoras Futuras
+
+### Limitaciones Actuales
+- Datos de demostración (no reales)
+- Modelo sin histórico de datos (menos precisión)
+- Algunas variables faltantes según disponibilidad de datos públicos
+- Mapa de demostración (sin coordenadas reales)
+
+### Mejoras Futuras
+- Integración con API en tiempo real
+- Histórico de datos (predicciones más precisas)
+- Más indicadores (transporte, educación, salud)
+- Análisis de series temporales
+- Dashboard de evolución histórica
+- Alertas automáticas por email
+- Exportación de reportes PDF
+- Integración con herramientas municipales
+
+---
+
+## 👨‍💻 Arquitectura Técnica
+
+### Backend
+- **Python 3.9+**
+- **pandas**: Procesamiento de datos
+- **scikit-learn**: Machine Learning
+- **numpy**: Computación numérica
+
+### Frontend
+- **Streamlit**: Interfaz web interactiva
+- **Plotly**: Gráficos interactivos
+- **Folium**: Mapas interactivos
+
+### Datos
+- **API CKAN**: Fuenlabrada Open Data
+- **CSV/XLSX**: Carga local
+
+---
+
+## 📝 Notas de Desarrollo
+
+### Variables de Entrada Requeridas
+
+El DataFrame debe contener al menos:
+```python
+df = pd.DataFrame({
+    'zona': str,                          # Nombre de la zona
+    'quejas': float,                      # Número de quejas
+    'contaminacion': float,               # Índice de contaminación (0-100)
+    'ruido': float,                       # Decibilios o índice (0-100)
+    'zonas_verdes': float,               # Área en m² o índice (0-100)
+    'servicios_publicos': float,         # Número o índice (0-100)
+    'actividad_comercial': float,        # Número de negocios o índice (0-100)
+    # Opcionales para mapa:
+    'latitud': float,                     # Coordenada Y
+    'longitud': float,                    # Coordenada X
+})
+```
+
+### Ejecución en Línea de Comandos
+
+```bash
+# Desarrollo
+streamlit run app.py
+
+# Producción
+streamlit run app.py --logger.level=warning
+
+# Con puerto específico
+streamlit run app.py --server.port 8080
+```
+
+---
+
+## 📞 Soporte y Contacto
+
+**Proyecto:** DATA-HACK-FUENLABRADA 2026
+**Formato:** Análisis de Datos Abiertos
+**Tecnologías:** Python, Streamlit, Machine Learning
+
+---
+
+## 📄 Licencia
+
+Proyecto abierto para uso educativo y municipal. Los datos utilizados son de origen público (Portal de Datos Abiertos de Fuenlabrada).
+
+---
+
+**Última actualización:** Mayo 2026
+**Versión:** 1.0 - Versión inicial para Hackathon
 
 El Índice de Prioridad Urbana se calcula con las siguientes ponderaciones:
 

@@ -191,7 +191,7 @@ def create_sample_data() -> pd.DataFrame:
     ]
     
     data = {
-        "zona": zones * 2 if len(zones) % 2 == 0 else zones + zones[:1],
+        "zona": zones,
         "quejas": np.random.randint(50, 500, len(zones)),
         "contaminacion": np.random.uniform(30, 120, len(zones)),
         "ruido": np.random.uniform(55, 85, len(zones)),

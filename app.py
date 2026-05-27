@@ -1,6 +1,17 @@
 """
-Fuenlabrada Smart Priorities
+FUENLABRADA SMART PRIORITIES
+============================
 Plataforma inteligente para priorizar actuaciones urbanas mediante datos abiertos y análisis predictivo.
+
+Características:
+- 📍 Mapa interactivo de zonas por prioridad
+- ⭐ Índice de Prioridad Urbana (0-100)
+- 🌳 Análisis ambiental (contaminación, ruido, zonas verdes)
+- 🤖 Predicción con Machine Learning
+- 🧠 Recomendaciones automáticas
+- 📦 Trazabilidad de datos públicos
+
+Autor: Proyecto Hackathon Fuenlabrada
 """
 
 import streamlit as st
@@ -10,6 +21,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_folium import st_folium
 import warnings
+from datetime import datetime
 
 warnings.filterwarnings("ignore")
 
@@ -37,55 +49,178 @@ from src.recommendations import RecommendationEngine
 
 
 # ============================================================================
-# CONFIGURACIÓN DE PÁGINA
+# CONFIGURACIÓN DE PÁGINA - ESTILO PROFESIONAL
 # ============================================================================
 
 st.set_page_config(
     page_title="Fuenlabrada Smart Priorities",
     page_icon="📍",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        "About": "Plataforma de Análisis Urbano - Hackathon Fuenlabrada"
+    }
 )
 
-# CSS personalizado
+# CSS personalizado profesional
 st.markdown("""
 <style>
+    /* Paleta de colores */
+    :root {
+        --color-critical: #dc3545;
+        --color-high: #fd7e14;
+        --color-medium: #ffc107;
+        --color-low: #28a745;
+    }
+    
+    /* Estilos generales */
+    .stMetricLabel {
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+    
+    /* Headers */
+    .header-title {
+        font-size: 2.8em;
+        color: #003366;
+        text-align: center;
+        margin: 20px 0 10px 0;
+        font-weight: 700;
+    }
+    
+    .header-subtitle {
+        font-size: 1.1em;
+        color: #666;
+        text-align: center;
+        margin: 0 0 20px 0;
+    }
+    
+    /* Tarjetas de métricas */
     .metric-card {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         padding: 20px;
         border-radius: 10px;
         text-align: center;
         margin: 10px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .critical {background-color: #ffe6e6;}
-    .high {background-color: #fff3cd;}
-    .medium {background-color: #d1ecf1;}
-    .low {background-color: #d4edda;}
-    .header-title {
-        font-size: 2.5em;
-        color: #003366;
-        text-align: center;
-        margin: 20px 0;
+    
+    .critical {
+        background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+        border-left: 5px solid #dc3545;
+    }
+    
+    .high {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffe8a0 100%);
+        border-left: 5px solid #fd7e14;
+    }
+    
+    .medium {
+        background: linear-gradient(135deg, #d1ecf1 0%, #a8dfe0 100%);
+        border-left: 5px solid #0c5460;
+    }
+    
+    .low {
+        background: linear-gradient(135deg, #d4edda 0%, #a8d5aa 100%);
+        border-left: 5px solid #28a745;
+    }
+    
+    /* Separadores */
+    hr {
+        margin: 25px 0;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] button {
+        font-size: 1.05em;
+        font-weight: 600;
+    }
+    
+    /* Botones */
+    .stButton > button {
+        background-color: #003366;
+        color: white;
+        border-radius: 5px;
+        border: none;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background-color: #004d99;
+        box-shadow: 0 4px 12px rgba(0,51,102,0.3);
+    }
+    
+    /* Markdown personalizado */
+    .info-box {
+        background-color: #e7f3ff;
+        border-left: 5px solid #0066cc;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+    }
+    
+    .success-box {
+        background-color: #d4edda;
+        border-left: 5px solid #28a745;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+    }
+    
+    .warning-box {
+        background-color: #fff3cd;
+        border-left: 5px solid #ffc107;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+    }
+    
+    .error-box {
+        background-color: #f8d7da;
+        border-left: 5px solid #dc3545;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ============================================================================
-# INICIALIZACIÓN DE SESSION STATE
+# INICIALIZACIÓN DE SESSION STATE - Estado persistente
 # ============================================================================
 
+# Datos maestros
 if "df_master" not in st.session_state:
     st.session_state.df_master = None
+    st.session_state.df_processed = None
 
+# Gestión de datasets
 if "datasets_loaded" not in st.session_state:
     st.session_state.datasets_loaded = {}
 
+if "datasets_metadata" not in st.session_state:
+    st.session_state.datasets_metadata = {}
+
+# Modelo ML
 if "predictor" not in st.session_state:
     st.session_state.predictor = PriorityPredictor()
 
 if "model_trained" not in st.session_state:
     st.session_state.model_trained = False
+
+if "model_metrics" not in st.session_state:
+    st.session_state.model_metrics = {}
+
+# UI
+if "current_tab" not in st.session_state:
+    st.session_state.current_tab = 0
+
+# Recomendaciones
+if "recommendations_engine" not in st.session_state:
+    st.session_state.recommendations_engine = RecommendationEngine()
 
 
 # ============================================================================
