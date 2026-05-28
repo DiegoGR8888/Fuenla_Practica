@@ -10,7 +10,7 @@ from typing import Tuple
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Normaliza nombres de columnas
+    Normaliza nombres de columnas y mapea nombres largos del CKAN a nombres cortos
     
     Args:
         df: DataFrame a normalizar
@@ -19,12 +19,30 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame con columnas normalizadas
     """
     df = df.copy()
+    
+    # Mapeo de nombres CKAN largos a nombres cortos esperados
+    mapping = {
+        'quejas_ciudadanas': 'quejas',
+        'indice_contaminacion_aire': 'contaminacion',
+        'ruido_db': 'ruido',
+        'area_zonas_verdes_m2': 'zonas_verdes',
+        'equipamientos_publicos': 'servicios_publicos',
+        'comercios_activos': 'actividad_comercial',
+        'poblacion_2024': 'poblacion',
+        'fuente_datos': 'fuente',
+    }
+    
+    # Normaliza columnas: lowercase, strip, replace espacios
     df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
     df.columns = df.columns.str.replace("[áàäâ]", "a", regex=True)
     df.columns = df.columns.str.replace("[éèëê]", "e", regex=True)
     df.columns = df.columns.str.replace("[íìïî]", "i", regex=True)
     df.columns = df.columns.str.replace("[óòöô]", "o", regex=True)
     df.columns = df.columns.str.replace("[úùüû]", "u", regex=True)
+    
+    # Aplica mapeo de nombres
+    df = df.rename(columns=mapping)
+    
     return df
 
 

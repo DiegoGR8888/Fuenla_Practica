@@ -75,16 +75,121 @@ Convertir datos abiertos y datos municipales en una herramienta visual e intelig
 
 ---
 
-## 📊 Indicadores Utilizados
+## 📊 Indicadores Utilizados y Definiciones
 
-| Indicador | Peso | Fuente |
-|-----------|------|--------|
-| Quejas ciudadanas | 30% | Portal de Datos Abiertos |
-| Contaminación (PM10, NO2) | 20% | Calidad del aire - Datos abiertos |
-| Ruido (Decibelios) | 15% | Contaminación acústica - Datos abiertos |
-| Zonas verdes (déficit) | 15% | Espacios verdes - Datos abiertos |
-| Servicios públicos | 10% | Edificios públicos - Datos abiertos |
-| Actividad comercial | 10% | Tipología comercial - Datos abiertos |
+### Fuente Principal de Datos
+**Portal de Datos Abiertos del Ayuntamiento de Fuenlabrada**
+- URL: https://datosabiertos.ayto-fuenlabrada.es/
+- Formato: CSV/XLSX desde CKAN
+- Licencia: CC0 1.0 (Dominio Público)
+- Cobertura: Todas las zonas de Fuenlabrada
+- Actualización: Trimestral
+
+### 6 Indicadores Clave del Índice
+
+#### 1️⃣ **Quejas Ciudadanas (Peso: 30%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | Número de incidencias/reclamaciones ciudadanas |
+| **Rango** | 0-500+ quejas por período |
+| **Interpretación** | Mayor número = Mayor insatisfacción ciudadana |
+| **Fuente** | Plataforma de Participación Ciudadana - Ayto Fuenlabrada |
+| **Significado** | Refleja problemas percibidos por los habitantes |
+| **Problemas captados** | Servicios deficientes, limpieza, seguridad, ruido |
+
+#### 2️⃣ **Contaminación del Aire (Peso: 20%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | Concentración de PM2.5 y NO₂ en μg/m³ |
+| **Rango** | 0-100 (Bueno a Peligroso según OMS) |
+| **Interpretación** | >35 μg/m³ indica aire insalubre |
+| **Fuente** | Red de Monitoreo Ambiental Municipal |
+| **Significado** | Impacto directo en salud respiratoria |
+| **Problemas captados** | Tráfico vehicular, industria, calefacción |
+
+#### 3️⃣ **Contaminación Acústica (Peso: 15%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | Nivel de ruido ambiental en dB (decibelios) |
+| **Rango** | 55-85 dB |
+| **Interpretación** | >70dB afecta sueño y concentración (OMS) |
+| **Fuente** | Red de Monitoreo Acústico - CKAN Municipal |
+| **Significado** | Afecta calidad de vida y bienestar |
+| **Problemas captados** | Tráfico, comercios, vida nocturna, construcción |
+
+#### 4️⃣ **Déficit de Zonas Verdes (Peso: 15%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | m² de parques/espacios verdes por habitante |
+| **Rango** | 0-50+ m²/hab (Inverso: menos verde = más prioridad) |
+| **Interpretación** | <9 m²/hab es insuficiente según ONU |
+| **Fuente** | Inventario Municipal de Espacios Públicos |
+| **Significado** | Necesidad de espacios para ocio y regulación climática |
+| **Problemas captados** | Falta de parques, plazas, arbolado urbano |
+
+#### 5️⃣ **Equipamientos Públicos (Peso: 10%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | Disponibilidad de servicios (centros salud, educación, etc.) |
+| **Rango** | Número de equipamientos por zona |
+| **Interpretación** | Menor disponibilidad = Mayor necesidad |
+| **Fuente** | Catálogo Municipal de Servicios Públicos |
+| **Significado** | Acceso a servicios básicos de calidad |
+| **Problemas captados** | Déficit de colegios, ambulatorios, centros cívicos |
+
+#### 6️⃣ **Actividad Comercial (Peso: 10%)**
+| Aspecto | Detalle |
+|---------|---------|
+| **Qué mide** | Número de comercios activos |
+| **Rango** | 0-400+ comercios por zona |
+| **Interpretación** | Baja actividad indica problemas socioeconómicos |
+| **Fuente** | Registro de Actividad Comercial del Ayuntamiento |
+| **Significado** | Vitalidad económica y oportunidades de empleo |
+| **Problemas captados** | Declive económico, desempleo, falta de servicios |
+
+### 📈 Fórmula del Índice
+
+```
+ÍNDICE DE PRIORIDAD = 
+    0.30 × Normalizar(Quejas) +
+    0.20 × Normalizar(Contaminación) +
+    0.15 × Normalizar(Ruido) +
+    0.15 × Normalizar(ÉficitVerde) +
+    0.10 × Normalizar(Equipamientos) +
+    0.10 × Normalizar(Comercios)
+
+Resultado: Escala 0-100
+- 0-40:   Zona en buen estado
+- 40-60:  Requiere seguimiento
+- 60-80:  Intervención recomendada
+- 80-100: Intervención urgente/crítica
+```
+
+### 🎯 ¿Qué se considera "Problemático"?
+
+Se consideran problemáticas aquellas zonas que presentan:
+
+| Problema | Indicador | Umbral |
+|----------|-----------|--------|
+| **Ciudadanos descontentos** | Quejas altas | >250/período |
+| **Aire contaminado** | Contaminación | >60 índice |
+| **Ruido excesivo** | Acústica | >72 dB |
+| **Falta de naturaleza** | Zonas verdes | Índice alto |
+| **Servicios insuficientes** | Equipamientos | Baja disponibilidad |
+| **Declive económico** | Comercios | <150 activos |
+
+---
+
+## 📊 Indicadores en la Plataforma
+
+| Indicador | Peso | Fuente | Problema |
+|-----------|------|--------|---------|
+| Quejas ciudadanas | 30% | Portal Datos Abiertos | Insatisfacción ciudadana |
+| Contaminación del aire | 20% | Red Monitoreo Ambiental | Salud respiratoria |
+| Ruido | 15% | Red Monitoreo Acústico | Calidad de vida |
+| Zonas verdes | 15% | Espacios Públicos | Ocio y clima urbano |
+| Servicios públicos | 10% | Catálogo Municipal | Acceso a servicios |
+| Actividad comercial | 10% | Registro Comercial | Vitalidad económica |
 
 ---
 
@@ -193,37 +298,76 @@ openpyxl>=3.1.0            # Lectura de Excel
 ## 🔄 Metodología
 
 ### 1. **Carga de Datos**
-- Origen: Portal de Datos Abiertos de Fuenlabrada (API CKAN)
-- Alternativa: Subida manual de CSV/XLSX desde Streamlit
-- Integración automática de múltiples fuentes
+- Origen principal: **Portal de Datos Abiertos de Fuenlabrada** (https://datosabiertos.ayto-fuenlabrada.es/)
+- Formato: CSV/XLSX desde CKAN
+- Cobertura: Todas las zonas de Fuenlabrada
+- Actualización: Trimestral
+- Licencia: CC0 1.0 (Dominio público)
+- Seguridad: Datos públicos, sin información sensible
 
 ### 2. **Limpieza y Preparación**
 - Normalización de columnas (lowercase, sin espacios)
 - Detección automática de tipos de datos
 - Manejo de valores faltantes (estrategia mediana)
 - Eliminación de duplicados
+- Validación de rangos (ej: ruido 0-120 dB)
 
-### 3. **Cálculo del Índice**
-- Normalización Min-Max [0, 1] de cada indicador
-- Aplicación de pesos ponderados
-- Conversión a escala [0, 100]
-- Clasificación en 4 niveles de prioridad
+### 3. **Cálculo del Índice de Prioridad**
+El índice combina 6 indicadores en una métrica única 0-100:
 
-### 4. **Análisis por Ejes**
-- **Eje Social**: Quejas, servicios, atención ciudadana
-- **Eje Ambiental**: Contaminación, ruido, zonas verdes
-- **Eje Económico**: Actividad comercial, dinami smo
+```
+Índice = 0.30×Quejas + 0.20×Contaminación + 0.15×Ruido + 
+         0.15×ÉficitVerde + 0.10×Equipamientos + 0.10×Comercios
 
-### 5. **Predicción ML**
-- Modelo: Random Forest Regressor
-- Variables: Indicadores normalizados
-- Target: Índice de prioridad futuro
-- Validación: Cross-validation 5-fold
+Pasos:
+1. Normalizar cada indicador a escala 0-100
+2. Aplicar pesos según importancia municipal
+3. Sumar componentes ponderadas
+4. Resultado: Escala 0-100
+5. Clasificar en nivel: Baja/Media/Alta/Crítica
+```
 
-### 6. **Recomendaciones**
-- Reglas automáticas basadas en valores de indicadores
-- Priorización según nivel de necesidad
-- Enfoque holístico por zona
+### 4. **Análisis por Ejes de Sostenibilidad**
+- **👥 Eje Social** (Quejas + Servicios): Satisfacción ciudadana y acceso a servicios
+- **🌳 Eje Ambiental** (Contaminación + Ruido + Verdes): Sostenibilidad y calidad ambiental
+- **💰 Eje Económico** (Comercios): Vitalidad económica y oportunidades de empleo
+
+### 5. **Predicción con Machine Learning**
+El modelo de predicción aprende de los 6 indicadores para anticipar problemas futuros:
+
+**Algoritmo:** Random Forest Regressor
+- 100 árboles de decisión independientes
+- Cada árbol aprende relaciones entre indicadores
+- La predicción es el promedio de todos los árboles
+
+**Entrada:** Mediciones actuales de 6 indicadores por zona
+**Salida:** Pronóstico del Índice de Prioridad (próxima evaluación)
+**Validación:** Cross-validation 5-fold con métricas RMSE y R²
+
+**¿Cómo funciona?**
+1. Lee los valores actuales de cada indicador
+2. Identifica patrones históricos (tendencias)
+3. Predice si cada indicador mejorará o empeorará
+4. Calcula el índice futuro esperado
+5. Genera alertas de riesgo
+
+**Interpretación de resultados:**
+- 🔴 Riesgo Alto (Índice futuro > 80): Intervención urgente
+- 🟠 Riesgo Medio (60-80): Monitoreo activo
+- 🟡 Riesgo Bajo (40-60): Seguimiento
+- 🟢 Sin riesgo (<40): Mantener
+
+### 6. **Recomendaciones Automáticas**
+- Reglas basadas en indicadores (ej: si ruido > 75dB → "Controlar focos sonoros")
+- Priorización según nivel de criticidad
+- Enfoque específico por zona y eje
+- Acciones accionables y basadas en datos
+
+### 7. **Trazabilidad de Datos**
+- Origen documentado para cada valor
+- Fechas de actualización de fuentes
+- Validación de integridad
+- Reportes de calidad de datos
 
 ---
 
