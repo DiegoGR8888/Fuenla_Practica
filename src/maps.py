@@ -11,7 +11,50 @@ from streamlit_folium import st_folium
 import pydeck as pdk
 from typing import Optional
 import numpy as np
+import unicodedata
 from src.indicators import get_priority_color
+
+
+# Coordenadas y límites de Fuenlabrada
+FUENLABRADA_CENTER = (40.325, -3.80)
+FUENLABRADA_BOUNDS = {
+    "lat_min": 40.27,
+    "lat_max": 40.36,
+    "lon_min": -3.85,
+    "lon_max": -3.74,
+}
+KNOWN_OUTSIDE_ZONES = {"móstoles", "mostoles", "getafe", "leganes", "alcorcon"}
+
+
+def filter_fuenlabrada_locations(
+    df: pd.DataFrame,
+    lat_col: str = "latitud",
+    lon_col: str = "longitud",
+    zone_col: str = "zona",
+) -> pd.DataFrame:
+    """
+    Devuelve solo las filas con coordenadas dentro de los límites de Fuenlabrada.
+    """
+    if lat_col not in df.columns or lon_col not in df.columns:
+        return df.copy()
+
+    df = df.copy()
+    df[lat_col] = pd.to_numeric(df[lat_col], errors="coerce")
+    df[lon_col] = pd.to_numeric(df[lon_col], errors="coerce")
+
+    mask = (
+        df[lat_col].between(FUENLABRADA_BOUNDS["lat_min"], FUENLABRADA_BOUNDS["lat_max"]) &
+        df[lon_col].between(FUENLABRADA_BOUNDS["lon_min"], FUENLABRADA_BOUNDS["lon_max"])
+    )
+
+    if zone_col in df.columns:
+        zone_values = df[zone_col].astype(str).str.lower().str.strip()
+        zone_values = zone_values.apply(lambda x: unicodedata.normalize('NFKD', x)
+                                        .encode('ascii', errors='ignore')
+                                        .decode('ascii'))
+        mask &= ~zone_values.isin(KNOWN_OUTSIDE_ZONES)
+
+    return df.loc[mask].reset_index(drop=True)
 
 
 def create_folium_map(
@@ -39,16 +82,26 @@ def create_folium_map(
         folium.Map: Mapa creado
     """
     
+    # Filtra a puntos válidos de Fuenlabrada
+    df = filter_fuenlabrada_locations(df, lat_col=lat_col, lon_col=lon_col, zone_col=zone_col)
+
     # Coordenadas centrales de Fuenlabrada
-    center_lat = 40.32 if lat_col not in df.columns else df[lat_col].mean()
-    center_lon = -3.80 if lon_col not in df.columns else df[lon_col].mean()
-    
+    center_lat, center_lon = FUENLABRADA_CENTER
+    if lat_col in df.columns and lon_col in df.columns and len(df) > 0:
+        center_lat = df[lat_col].mean()
+        center_lon = df[lon_col].mean()
+
     # Crea mapa base
     m = folium.Map(
         location=[center_lat, center_lon],
         zoom_start=zoom_start,
-        tiles="OpenStreetMap"
+        tiles="OpenStreetMap",
+        max_bounds=True,
     )
+    m.fit_bounds([
+        [FUENLABRADA_BOUNDS['lat_min'], FUENLABRADA_BOUNDS['lon_min']],
+        [FUENLABRADA_BOUNDS['lat_max'], FUENLABRADA_BOUNDS['lon_max']]
+    ])
     
     # Validar que existen las columnas necesarias
     if lat_col not in df.columns or lon_col not in df.columns:
@@ -104,7 +157,7 @@ def create_heatmap(
     lat_col: str = "latitud",
     lon_col: str = "longitud",
     value_col: str = "indice_prioridad",
-    zoom_start: int = 12,
+    zoom_start: int = 13,
 ) -> folium.Map:
     """
     Crea mapa de calor
@@ -120,15 +173,24 @@ def create_heatmap(
         folium.Map: Mapa de calor
     """
     
-    center_lat = 40.32 if lat_col not in df.columns else df[lat_col].mean()
-    center_lon = -3.80 if lon_col not in df.columns else df[lon_col].mean()
+    df = filter_fuenlabrada_locations(df, lat_col=lat_col, lon_col=lon_col)
+
+    center_lat, center_lon = FUENLABRADA_CENTER
+    if lat_col in df.columns and lon_col in df.columns and len(df) > 0:
+        center_lat = df[lat_col].mean()
+        center_lon = df[lon_col].mean()
     
     m = folium.Map(
         location=[center_lat, center_lon],
         zoom_start=zoom_start,
-        tiles="OpenStreetMap"
+        tiles="OpenStreetMap",
+        max_bounds=True,
     )
-    
+    m.fit_bounds([
+        [FUENLABRADA_BOUNDS['lat_min'], FUENLABRADA_BOUNDS['lon_min']],
+        [FUENLABRADA_BOUNDS['lat_max'], FUENLABRADA_BOUNDS['lon_max']]
+    ])
+
     # Prepara datos para heatmap
     if lat_col in df.columns and lon_col in df.columns and value_col in df.columns:
         heat_data = []
@@ -139,7 +201,13 @@ def create_heatmap(
                 heat_data.append([row[lat_col], row[lon_col], normalized_value])
         
         if heat_data:
-            plugins.HeatMap(heat_data, radius=20, blur=15, max_zoom=1).add_to(m)
+            plugins.HeatMap(
+                heat_data,
+                radius=10,
+                blur=8,
+                max_zoom=13,
+                min_opacity=0.4,
+            ).add_to(m)
     
     return m
 
@@ -165,6 +233,9 @@ def create_pydeck_map(
     
     if lat_col not in df.columns or lon_col not in df.columns:
         return None
+
+    # Filtra a puntos válidos de Fuenlabrada
+    df = filter_fuenlabrada_locations(df, lat_col=lat_col, lon_col=lon_col)
     
     # Prepara datos
     plot_data = df[[lat_col, lon_col, color_col]].copy()
@@ -228,14 +299,23 @@ def plot_priority_distribution_map(
         folium.Map: Mapa coloreado
     """
     
-    center_lat = 40.32 if lat_col not in df.columns else df[lat_col].mean()
-    center_lon = -3.80 if lon_col not in df.columns else df[lon_col].mean()
+    df = filter_fuenlabrada_locations(df, lat_col=lat_col, lon_col=lon_col)
+
+    center_lat, center_lon = FUENLABRADA_CENTER
+    if lat_col in df.columns and lon_col in df.columns and len(df) > 0:
+        center_lat = df[lat_col].mean()
+        center_lon = df[lon_col].mean()
     
     m = folium.Map(
         location=[center_lat, center_lon],
         zoom_start=12,
-        tiles="OpenStreetMap"
+        tiles="OpenStreetMap",
+        max_bounds=True,
     )
+    m.fit_bounds([
+        [FUENLABRADA_BOUNDS['lat_min'], FUENLABRADA_BOUNDS['lon_min']],
+        [FUENLABRADA_BOUNDS['lat_max'], FUENLABRADA_BOUNDS['lon_max']]
+    ])
     
     if lat_col in df.columns and lon_col in df.columns:
         # Capa para cada nivel de prioridad
@@ -292,15 +372,24 @@ def create_zone_comparison_map(
         folium.Map: Mapa comparativo
     """
     
-    center_lat = 40.32 if lat_col not in df.columns else df[lat_col].mean()
-    center_lon = -3.80 if lon_col not in df.columns else df[lon_col].mean()
+    df = filter_fuenlabrada_locations(df, lat_col=lat_col, lon_col=lon_col)
+
+    center_lat, center_lon = FUENLABRADA_CENTER
+    if lat_col in df.columns and lon_col in df.columns and len(df) > 0:
+        center_lat = df[lat_col].mean()
+        center_lon = df[lon_col].mean()
     
     m = folium.Map(
         location=[center_lat, center_lon],
         zoom_start=12,
-        tiles="OpenStreetMap"
+        tiles="OpenStreetMap",
+        max_bounds=True,
     )
-    
+    m.fit_bounds([
+        [FUENLABRADA_BOUNDS['lat_min'], FUENLABRADA_BOUNDS['lon_min']],
+        [FUENLABRADA_BOUNDS['lat_max'], FUENLABRADA_BOUNDS['lon_max']]
+    ])
+
     if lat_col in df.columns and lon_col in df.columns and compare_col in df.columns:
         # Normaliza valores para color
         min_val = df[compare_col].min()

@@ -4,7 +4,6 @@ FUENLABRADA SMART PRIORITIES
 Plataforma inteligente para priorizar actuaciones urbanas mediante datos abiertos y análisis predictivo.
 
 Características:
-- 📍 Mapa interactivo de zonas por prioridad
 - ⭐ Índice de Prioridad Urbana (0-100)
 - 🌳 Análisis ambiental (contaminación, ruido, zonas verdes)
 - 🤖 Predicción con Machine Learning
@@ -19,7 +18,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from streamlit_folium import st_folium
 import warnings
 from datetime import datetime
 
@@ -39,10 +37,6 @@ from src.indicators import (
     classify_priority, get_priority_color, get_priority_emoji,
     calculate_social_impact_score, calculate_environmental_impact_score,
     calculate_economic_impact_score
-)
-from src.maps import (
-    create_folium_map, create_heatmap, plot_priority_distribution_map,
-    create_zone_comparison_map
 )
 from src.model import PriorityPredictor, add_predictions_to_df
 from src.recommendations import RecommendationEngine
@@ -593,9 +587,8 @@ else:
     st.markdown("---")
     
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "🏙️ Inicio",
-        "📍 Mapa Interactivo",
         "⭐ Índice Urbano",
         "🌳 Medio Ambiente",
         "🤖 Predicción",
@@ -686,51 +679,8 @@ else:
         garantizando transparencia y trazabilidad.
         """)
     
-    # ========== TAB 2: MAPA INTERACTIVO ==========
+    # ========== TAB 2: ÍNDICE URBANO ==========
     with tab2:
-        st.markdown("## 📍 Mapa Interactivo de Prioridades")
-        
-        col1, col2 = st.columns([3, 1])
-        
-        with col2:
-            map_type = st.radio(
-                "Tipo de mapa:",
-                ["Puntos", "Heatmap", "Por Prioridad"]
-            )
-            
-            if "latitud" in df_master.columns and "longitud" in df_master.columns:
-                show_popup = st.checkbox("Mostrar información", value=True)
-        
-        with col1:
-            if "latitud" in df_master.columns and "longitud" in df_master.columns:
-                if map_type == "Puntos":
-                    m = create_folium_map(
-                        df_master,
-                        lat_col="latitud",
-                        lon_col="longitud",
-                        zone_col="zona",
-                        color_col="prioridad"
-                    )
-                elif map_type == "Heatmap":
-                    m = create_heatmap(
-                        df_master,
-                        lat_col="latitud",
-                        lon_col="longitud",
-                        value_col="indice_prioridad"
-                    )
-                else:
-                    m = plot_priority_distribution_map(
-                        df_master,
-                        lat_col="latitud",
-                        lon_col="longitud"
-                    )
-                
-                st_folium(m, width=1200, height=600)
-            else:
-                st.warning("⚠️ No hay coordenadas geográficas disponibles")
-    
-    # ========== TAB 3: ÍNDICE URBANO ==========
-    with tab3:
         st.markdown("## ⭐ Índice de Prioridad Urbana")
         
         st.markdown("""
@@ -806,8 +756,8 @@ else:
             st.metric("Mediana", f"{df_master['indice_prioridad'].median():.1f}")
             st.metric("Desviación Std", f"{df_master['indice_prioridad'].std():.1f}")
     
-    # ========== TAB 4: MEDIO AMBIENTE ==========
-    with tab4:
+    # ========== TAB 3: MEDIO AMBIENTE ==========
+    with tab3:
         st.markdown("## 🌳 Análisis Ambiental")
         
         display_environmental_analysis(df_master)
@@ -821,8 +771,8 @@ else:
             for i, zone in enumerate(env_zones, 1):
                 st.markdown(f"**{i}. {zone}**")
     
-    # ========== TAB 5: PREDICCIÓN ==========
-    with tab5:
+    # ========== TAB 4: PREDICCIÓN ==========
+    with tab4:
         st.markdown("## 🤖 Predicción de Riesgo Futuro")
         
         st.markdown("""
@@ -893,8 +843,8 @@ else:
         else:
             st.info("⏳ El modelo se está entrenando con los datos disponibles...")
     
-    # ========== TAB 6: RECOMENDACIONES ==========
-    with tab6:
+    # ========== TAB 5: RECOMENDACIONES ==========
+    with tab5:
         st.markdown("## 🧠 Recomendaciones Automáticas")
         
         col1, col2 = st.columns(2)
@@ -955,8 +905,8 @@ else:
             recommendation = RecommendationEngine.get_zone_recommendation(zone_data)
             st.markdown(recommendation)
     
-    # ========== TAB 7: DATOS ==========
-    with tab7:
+    # ========== TAB 6: DATOS ==========
+    with tab6:
         st.markdown("## 📦 Trazabilidad de Datos y Fuentes")
         
         st.markdown("""
