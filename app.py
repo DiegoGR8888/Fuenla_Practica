@@ -40,6 +40,10 @@ from src.indicators import (
 )
 from src.model import PriorityPredictor, add_predictions_to_df
 from src.recommendations import RecommendationEngine
+from src.impact_simulator import (
+    simulate_custom_intervention, rank_actions_for_zone,
+    explain_main_factors, ask_ollama_for_recommendation
+)
 
 
 # ============================================================================
@@ -587,12 +591,13 @@ else:
     st.markdown("---")
     
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "🏙️ Inicio",
         "⭐ Índice Urbano",
         "🌳 Medio Ambiente",
         "🤖 Predicción",
         "🧠 Recomendaciones",
+        "🧪 Simulador IA",
         "📦 Datos"
     ])
     
@@ -905,8 +910,133 @@ else:
             recommendation = RecommendationEngine.get_zone_recommendation(zone_data)
             st.markdown(recommendation)
     
-    # ========== TAB 6: DATOS ==========
+    # ========== TAB 6: SIMULADOR IA ==========
     with tab6:
+        st.markdown("## 🧪 Simulador de Actuaciones Municipales con IA")
+
+        st.markdown("""
+        Esta sección permite probar escenarios de intervención antes de ejecutarlos.
+        La idea es responder a una pregunta muy útil para la ciudadanía:
+
+        > **Si actuamos sobre ruido, contaminación, zonas verdes, servicios o comercio,
+        cuánto baja la prioridad urbana y a cuántos vecinos podríamos beneficiar?**
+        """)
+
+        zona_sim = st.selectbox(
+            "📍 Selecciona una zona para simular:",
+            df_master["zona"].unique(),
+            key="zona_simulador_ia"
+        )
+
+        zone_data_sim = df_master[df_master["zona"] == zona_sim].iloc[0]
+
+        st.markdown("---")
+        st.subheader("🔍 Diagnóstico actual de la zona")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Índice actual", f"{zone_data_sim['indice_prioridad']:.1f}")
+        with col2:
+            st.metric("Prioridad actual", str(zone_data_sim.get("prioridad", "N/D")))
+        with col3:
+            poblacion = int(zone_data_sim.get("poblacion_2024", zone_data_sim.get("poblacion", 0)))
+            st.metric("Población", f"{poblacion:,}".replace(",", "."))
+        with col4:
+            afectados = int(poblacion * float(zone_data_sim["indice_prioridad"]) / 100) if poblacion else 0
+            st.metric("Vecinos afectados estimados", f"{afectados:,}".replace(",", "."))
+
+        factores = explain_main_factors(zone_data_sim, top_n=3)
+        st.markdown("#### Factores que más explican la prioridad")
+        st.dataframe(pd.DataFrame(factores), use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader("🎚️ Diseña un escenario de actuación")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            reduccion_quejas = st.slider("Reducir quejas ciudadanas (%)", 0, 60, 20)
+            reduccion_contaminacion = st.slider("Reducir contaminación (%)", 0, 60, 15)
+        with col2:
+            reduccion_ruido = st.slider("Reducir ruido (%)", 0, 60, 15)
+            mejora_verdes = st.slider("Reducir déficit de zonas verdes (%)", 0, 60, 20)
+        with col3:
+            mejora_servicios = st.slider("Reducir déficit de servicios (%)", 0, 60, 10)
+            mejora_comercio = st.slider("Reducir déficit comercial (%)", 0, 60, 10)
+
+        reductions = {
+            "quejas": reduccion_quejas,
+            "contaminacion": reduccion_contaminacion,
+            "ruido": reduccion_ruido,
+            "zonas_verdes": mejora_verdes,
+            "servicios": mejora_servicios,
+            "comercio": mejora_comercio,
+        }
+
+        simulated_row, sim_result = simulate_custom_intervention(zone_data_sim, reductions)
+
+        st.markdown("---")
+        st.subheader("📈 Resultado del escenario")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Antes", f"{sim_result['indice_actual']:.1f}")
+        with col2:
+            st.metric("Después", f"{sim_result['indice_simulado']:.1f}", delta=f"-{sim_result['mejora_puntos']:.1f} puntos")
+        with col3:
+            st.metric("Nueva prioridad", sim_result["prioridad_simulada"])
+        with col4:
+            st.metric("Vecinos beneficiados", f"{sim_result['personas_beneficiadas_estimadas']:,}".replace(",", "."))
+
+        fig_sim = go.Figure(data=[
+            go.Bar(name="Antes", x=[sim_result["indice_actual"]], y=[zona_sim], orientation="h"),
+            go.Bar(name="Después", x=[sim_result["indice_simulado"]], y=[zona_sim], orientation="h"),
+        ])
+        fig_sim.update_layout(
+            title="Comparativa del índice antes/después",
+            xaxis_title="Índice de prioridad",
+            yaxis_title="Zona",
+            barmode="group",
+            height=260
+        )
+        st.plotly_chart(fig_sim, use_container_width=True)
+
+        st.markdown("---")
+        st.subheader("💰 Ranking de acciones por coste e impacto")
+
+        actions_df = rank_actions_for_zone(zone_data_sim, top_n=6)
+        visible_cols = [
+            "Acción", "Eje", "Coste estimado", "Impacto esperado", "Plazo",
+            "Mejora estimada índice", "Vecinos beneficiados estimados", "Prioridad acción"
+        ]
+        st.dataframe(actions_df[visible_cols], use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader("🤖 Recomendación ejecutiva con Ollama")
+
+        with st.expander("⚙️ Configuración de Ollama", expanded=False):
+            ollama_host = st.text_input("Host de Ollama", value="http://localhost:11434")
+            ollama_model = st.text_input("Modelo", value="llama3.2")
+            st.caption("Ejemplo local: primero ejecuta `ollama pull llama3.2` y después abre la app.")
+
+        if st.button("Generar recomendación con IA", type="primary"):
+            with st.spinner("Generando recomendación ejecutiva..."):
+                ai_text = ask_ollama_for_recommendation(
+                    zone_name=zona_sim,
+                    row=zone_data_sim,
+                    simulation_result=sim_result,
+                    actions_df=actions_df,
+                    model=ollama_model,
+                    host=ollama_host,
+                )
+            st.markdown(ai_text)
+
+        st.info(
+            "💡 Para la presentación: esta pestaña convierte el dashboard en una herramienta de decisión: "
+            "permite simular medidas, estimar vecinos beneficiados y justificar acciones por coste-impacto."
+        )
+
+    # ========== TAB 7: DATOS ==========
+    with tab7:
         st.markdown("## 📦 Trazabilidad de Datos y Fuentes")
         
         st.markdown("""
